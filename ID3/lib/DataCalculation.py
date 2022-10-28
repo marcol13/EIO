@@ -1,12 +1,25 @@
 import string
-
+import math
+from collections import defaultdict
 
 class DataCalculation:
     def __init__(self, dataset: list):
         self.dataset = dataset
+        self.entropy = self.calculate_entropy(dataset, "survived")
+        print(self.entropy)
 
-    def calculate_entropy(self):
-        pass
+    @staticmethod
+    def __calculate_entropy(data_subset: list, key: string = "survived"):
+        occurrence = defaultdict(int)
+        entropy = 0
+        subset_size = len(data_subset)
+        for data in data_subset:
+            occurrence[data[key]] += 1
+        for value in occurrence.values():
+            prob = value / subset_size
+            entropy -= prob * math.log(prob, 2)
+        return entropy
+
 
     def get_probability(self, data_subset: list, key: string):
         temp_subset = []
