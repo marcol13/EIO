@@ -14,6 +14,7 @@ class DataCalculation:
     def generate_tree(self, dataset: list, output_key: string = "survived"):
         dataset_size = len(dataset)
         global_entropy = self.__calculate_entropy(dataset)
+        gain_ratio_dict = {}
         for key in dataset[0].keys():
             entropy_dict = {}
             if key == output_key:
@@ -29,12 +30,13 @@ class DataCalculation:
             gain = self.__calculate_gain(global_entropy[0], conditional_entropy)
             intrinsic_info = self.__calculate_intrinsic_info(entropy_dict)
             gain_ratio = self.__calculate_gain_ratio(gain, intrinsic_info)
-            print(gain_ratio)
+            gain_ratio_dict[key] = gain_ratio
             # print(subset)
-
-    def __delete_key(self, key: string):
-        for element in self.dataset:
-            element.pop(key, None)
+        print(gain_ratio_dict)
+        max_key = max(gain_ratio_dict.items(), key=lambda k: k[1])[0]
+        print(max_key)
+        divided_dataset = self.__divide_dataset(dataset, max_key)
+        print(divided_dataset)
 
     @staticmethod
     def __calculate_entropy(data_subset: list, key: string = "survived"):
@@ -76,6 +78,16 @@ class DataCalculation:
         for data in dataset:
             data_subset[data[key]].append(data)
         return data_subset
+
+    @staticmethod
+    def __divide_dataset(dataset: list, key: string):
+        divided_dataset = defaultdict(list)
+        for element in dataset:
+            temp_key = element[key]
+            element.pop(key, None)
+            divided_dataset[temp_key].append(element)
+        return divided_dataset
+
 
     def get_probability(self, data_subset: list, key: string):
         temp_subset = []
