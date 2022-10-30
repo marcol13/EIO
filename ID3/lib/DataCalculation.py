@@ -27,8 +27,14 @@ class DataCalculation:
                 # print(entropy)
             conditional_entropy = self.__calculate_conditional_entropy(entropy_dict)
             gain = self.__calculate_gain(global_entropy[0], conditional_entropy)
-            print(gain)
+            intrinsic_info = self.__calculate_intrinsic_info(entropy_dict)
+            gain_ratio = self.__calculate_gain_ratio(gain, intrinsic_info)
+            print(gain_ratio)
             # print(subset)
+
+    def __delete_key(self, key: string):
+        for element in self.dataset:
+            element.pop(key, None)
 
     @staticmethod
     def __calculate_entropy(data_subset: list, key: string = "survived"):
@@ -52,6 +58,17 @@ class DataCalculation:
     @staticmethod
     def __calculate_gain(entropy: float, conditional_entropy: float):
         return entropy - conditional_entropy
+
+    @staticmethod
+    def __calculate_intrinsic_info(entropy_dict: dict):
+        info = 0
+        for option in entropy_dict.values():
+            info -= option["prob"] * math.log(option["prob"], 2)
+        return info
+
+    @staticmethod
+    def __calculate_gain_ratio(gain: float, intrinsic: float):
+        return gain / intrinsic
 
     @staticmethod
     def __generate_subset(dataset: list, key: string):
