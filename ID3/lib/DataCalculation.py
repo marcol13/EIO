@@ -14,6 +14,10 @@ class DataCalculation:
     def generate_tree(self, dataset: list, output_key: string = "survived"):
         dataset_size = len(dataset)
         global_entropy = self.__calculate_entropy(dataset)
+        if dataset_size == 0 or global_entropy[0] == 0.0:
+            print("KONIEC")
+            return
+
         gain_ratio_dict = {}
         for key in dataset[0].keys():
             entropy_dict = {}
@@ -33,10 +37,15 @@ class DataCalculation:
             gain_ratio_dict[key] = gain_ratio
             # print(subset)
         print(gain_ratio_dict)
-        max_key = max(gain_ratio_dict.items(), key=lambda k: k[1])[0]
-        print(max_key)
+        max_key, max_value = max(gain_ratio_dict.items(), key=lambda k: k[1])
+        if max_key == 0:
+            print("KONIEC")
+            return
         divided_dataset = self.__divide_dataset(dataset, max_key)
-        print(divided_dataset)
+        for data in divided_dataset.values():
+            print(data)
+            self.generate_tree(data)
+        # print(divided_dataset)
 
     @staticmethod
     def __calculate_entropy(data_subset: list, key: string = "survived"):
@@ -70,7 +79,7 @@ class DataCalculation:
 
     @staticmethod
     def __calculate_gain_ratio(gain: float, intrinsic: float):
-        return gain / intrinsic
+        return 0 if intrinsic == 0 else gain / intrinsic
 
     @staticmethod
     def __generate_subset(dataset: list, key: string):
