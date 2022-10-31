@@ -15,7 +15,7 @@ class DataCalculation:
         # self.entropy = self.calculate_entropy(dataset, "survived")
         # print(self.entropy)
 
-    def generate_tree(self, dataset: list, output_key: string = "survived", parent_key: uuid.UUID = uuid.uuid4()):
+    def generate_tree(self, dataset: list, output_key: string = "survived", parent_key: uuid.UUID = uuid.uuid4(), parent_value: string = ""):
         dataset_size = len(dataset)
         global_entropy = self.__calculate_entropy(dataset)
 
@@ -38,17 +38,18 @@ class DataCalculation:
             intrinsic_info = self.__calculate_intrinsic_info(entropy_dict)
             gain_ratio = self.__calculate_gain_ratio(gain, intrinsic_info)
             gain_ratio_dict[key] = gain_ratio
+        if gain_ratio_dict == {}:
+            return
         max_key, max_value = max(gain_ratio_dict.items(), key=lambda k: k[1])
         divided_dataset = self.__divide_dataset(dataset, max_key)
 
-        for data in divided_dataset.values():
-            parent_uuid = uuid.uuid4()
+        for (key, data) in divided_dataset.items():
+            node_uuid = uuid.uuid4()
             if self.tree.root is None:
-                parent_uuid = parent_key
-                self.tree.create_node(max_key, parent_uuid)
-            else:
-                self.tree.create_node(max_key, parent_uuid, parent=parent_key)
-            self.generate_tree(data, parent_key=parent_uuid)
+                self.tree.create_node(max_key, parent_key)
+
+            self.tree.create_node(f"{key} ({max_key})", node_uuid, parent=parent_key)
+            self.generate_tree(data, parent_key=node_uuid, parent_value=str(key))
 
     @staticmethod
     def __calculate_entropy(data_subset: list, key: string = "survived"):
