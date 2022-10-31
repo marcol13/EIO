@@ -1,21 +1,27 @@
 import string
 import math
 from collections import defaultdict
+from treelib import Tree
+import uuid
 
 class DataCalculation:
     def __init__(self, dataset: list):
         self.dataset = dataset
+        self.tree = Tree()
         self.generate_tree(dataset)
+        self.tree.show()
 
         # output_key = "survived"
         # self.entropy = self.calculate_entropy(dataset, "survived")
         # print(self.entropy)
 
-    def generate_tree(self, dataset: list, output_key: string = "survived"):
+    def generate_tree(self, dataset: list, output_key: string = "survived", parent_key: uuid.UUID = uuid.uuid4()):
         dataset_size = len(dataset)
         global_entropy = self.__calculate_entropy(dataset)
-        if dataset_size == 0 or global_entropy[0] == 0.0:
-            print("KONIEC")
+
+        if global_entropy[0] == 0.0:
+            parent_uuid = uuid.uuid4()
+            self.tree.create_node(dataset[0][output_key], parent_uuid, parent=parent_key)
             return
 
         gain_ratio_dict = {}
@@ -25,27 +31,24 @@ class DataCalculation:
                 continue
             subset = self.__generate_subset(dataset, key)
             for (subset_key, subset_list) in subset.items():
-                # print(subset_key)
                 entropy, occurence = self.__calculate_entropy(subset_list)
                 entropy_dict[subset_key] = {"entropy": entropy, "prob": occurence/dataset_size}
-                # entropy_dict[subset_key]["prob"] =
-                # print(entropy)
             conditional_entropy = self.__calculate_conditional_entropy(entropy_dict)
             gain = self.__calculate_gain(global_entropy[0], conditional_entropy)
             intrinsic_info = self.__calculate_intrinsic_info(entropy_dict)
             gain_ratio = self.__calculate_gain_ratio(gain, intrinsic_info)
             gain_ratio_dict[key] = gain_ratio
-            # print(subset)
-        print(gain_ratio_dict)
         max_key, max_value = max(gain_ratio_dict.items(), key=lambda k: k[1])
-        if max_key == 0:
-            print("KONIEC")
-            return
         divided_dataset = self.__divide_dataset(dataset, max_key)
+
         for data in divided_dataset.values():
-            print(data)
-            self.generate_tree(data)
-        # print(divided_dataset)
+            parent_uuid = uuid.uuid4()
+            if self.tree.root is None:
+                parent_uuid = parent_key
+                self.tree.create_node(max_key, parent_uuid)
+            else:
+                self.tree.create_node(max_key, parent_uuid, parent=parent_key)
+            self.generate_tree(data, parent_key=parent_uuid)
 
     @staticmethod
     def __calculate_entropy(data_subset: list, key: string = "survived"):
