@@ -1,8 +1,8 @@
 import string
 import math
+import uuid
 from collections import defaultdict
 from treelib import Tree
-import uuid
 from copy import deepcopy
 
 
@@ -14,12 +14,7 @@ class DataCalculation:
         self.generate_tree(dataset)
         self.tree.show()
 
-        # output_key = "survived"
-        # self.entropy = self.calculate_entropy(dataset, "survived")
-        # print(self.entropy)
-
-    def generate_tree(self, dataset: list, output_key: string = "survived", parent_key: uuid.UUID = uuid.uuid4(),
-                      parent_value: string = ""):
+    def generate_tree(self, dataset: list, output_key: string = "survived", parent_key: uuid.UUID = uuid.uuid4()):
         dataset_size = len(dataset)
         global_entropy = self.__calculate_entropy(dataset)
 
@@ -33,10 +28,12 @@ class DataCalculation:
             entropy_dict = {}
             if key == output_key:
                 continue
+
             subset = self.__generate_subset(dataset, key)
             for (subset_key, subset_list) in subset.items():
                 entropy, occurrence = self.__calculate_entropy(subset_list)
                 entropy_dict[subset_key] = {"entropy": entropy, "prob": occurrence / dataset_size}
+
             conditional_entropy = self.__calculate_conditional_entropy(entropy_dict)
             gain = self.__calculate_gain(global_entropy[0], conditional_entropy)
             intrinsic_info = self.__calculate_intrinsic_info(entropy_dict)
@@ -44,6 +41,7 @@ class DataCalculation:
             gain_ratio_dict[key] = gain_ratio
         if gain_ratio_dict == {}:
             return
+
         max_key, max_value = max(gain_ratio_dict.items(), key=lambda k: k[1])
         divided_dataset = self.__divide_dataset(dataset, max_key)
 
@@ -53,12 +51,11 @@ class DataCalculation:
                 self.tree.create_node(max_key, parent_key)
 
             self.tree.create_node(f"{key} ({max_key})", node_uuid, parent=parent_key)
-            self.generate_tree(data, parent_key=node_uuid, parent_value=str(key))
+            self.generate_tree(data, parent_key=node_uuid)
 
     def __determine_threshold(self, key: string = 'age', output_key: string = 'survived'):
         key_list = [tuple([data[key], 0 if data[output_key] == "no" else 1]) for data in self.dataset]
         key_list = sorted(key_list, key=lambda x: x[0])
-        print(key_list)
         thresh_list = []
         counter = 1
         age_sum = key_list[0][1]
@@ -101,8 +98,6 @@ class DataCalculation:
             entropy_dict[subset_key] = {"entropy": entropy, "prob": occurrence / len(dataset)}
         conditional_entropy = self.__calculate_conditional_entropy(entropy_dict)
         gain = self.__calculate_gain(global_entropy[0], conditional_entropy)
-        # intrinsic_info = self.__calculate_intrinsic_info(entropy_dict)
-        # gain_ratio = self.__calculate_gain_ratio(gain, intrinsic_info)
         return gain
 
     @staticmethod
@@ -154,11 +149,3 @@ class DataCalculation:
             element.pop(key, None)
             divided_dataset[temp_key].append(element)
         return divided_dataset
-
-    def get_probability(self, data_subset: list, key: string):
-        temp_subset = []
-        value_set = set()
-        for data in data_subset:
-            temp_subset.append(data[key])
-            value_set.add(data[key])
-        return [temp_subset.count(value) / len(temp_subset) for value in value_set]
