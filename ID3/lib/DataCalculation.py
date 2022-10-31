@@ -3,10 +3,13 @@ import math
 from collections import defaultdict
 from treelib import Tree
 import uuid
+from copy import deepcopy
+
 
 class DataCalculation:
     def __init__(self, dataset: list):
         self.dataset = dataset
+        self.__determine_threshold()
         self.tree = Tree()
         self.generate_tree(dataset)
         self.tree.show()
@@ -15,7 +18,8 @@ class DataCalculation:
         # self.entropy = self.calculate_entropy(dataset, "survived")
         # print(self.entropy)
 
-    def generate_tree(self, dataset: list, output_key: string = "survived", parent_key: uuid.UUID = uuid.uuid4(), parent_value: string = ""):
+    def generate_tree(self, dataset: list, output_key: string = "survived", parent_key: uuid.UUID = uuid.uuid4(),
+                      parent_value: string = ""):
         dataset_size = len(dataset)
         global_entropy = self.__calculate_entropy(dataset)
 
@@ -31,8 +35,8 @@ class DataCalculation:
                 continue
             subset = self.__generate_subset(dataset, key)
             for (subset_key, subset_list) in subset.items():
-                entropy, occurence = self.__calculate_entropy(subset_list)
-                entropy_dict[subset_key] = {"entropy": entropy, "prob": occurence/dataset_size}
+                entropy, occurrence = self.__calculate_entropy(subset_list)
+                entropy_dict[subset_key] = {"entropy": entropy, "prob": occurrence / dataset_size}
             conditional_entropy = self.__calculate_conditional_entropy(entropy_dict)
             gain = self.__calculate_gain(global_entropy[0], conditional_entropy)
             intrinsic_info = self.__calculate_intrinsic_info(entropy_dict)
@@ -50,6 +54,56 @@ class DataCalculation:
 
             self.tree.create_node(f"{key} ({max_key})", node_uuid, parent=parent_key)
             self.generate_tree(data, parent_key=node_uuid, parent_value=str(key))
+
+    def __determine_threshold(self, key: string = 'age', output_key: string = 'survived'):
+        key_list = [tuple([data[key], 0 if data[output_key] == "no" else 1]) for data in self.dataset]
+        key_list = sorted(key_list, key=lambda x: x[0])
+        print(key_list)
+        thresh_list = []
+        counter = 1
+        age_sum = key_list[0][1]
+        for i in range(1, len(key_list) + 1):
+            if key_list[i % len(key_list)][0] != key_list[i - 1][0]:
+                thresh_list.append({"age": key_list[i - 1][0], "prob": age_sum / counter})
+                counter = 1
+                age_sum = key_list[i % len(key_list)][1]
+            else:
+                counter += 1
+                age_sum += key_list[i % len(key_list)][1]
+
+        max_gain_ratio = (0, 0)
+        for i in range(0, len(thresh_list) - 1):
+            if thresh_list[i]["prob"] != thresh_list[i + 1]["prob"]:
+                thresh = (thresh_list[i]["age"] + thresh_list[i + 1]["age"]) / 2
+                temp = (thresh, self.__check_threshold_gain(thresh))
+                if max_gain_ratio[1] < temp[1]:
+                    max_gain_ratio = temp
+
+        self.__replace_values_by_thresh(max_gain_ratio[0])
+
+    def __replace_values_by_thresh(self, threshold: float, key: string = "age"):
+        for data in self.dataset:
+            if data[key] <= threshold:
+                data[key] = f"<= {threshold}"
+            else:
+                data[key] = f"> {threshold}"
+
+    def __check_threshold_gain(self, threshold: float, key: string = "age"):
+        dataset = deepcopy(self.dataset)
+        entropy_dict = {}
+        for data in dataset:
+            data[key] = 0 if data[key] <= threshold else 1
+
+        subset = self.__generate_subset(dataset, key)
+        global_entropy = self.__calculate_entropy(dataset)
+        for (subset_key, subset_list) in subset.items():
+            entropy, occurrence = self.__calculate_entropy(subset_list)
+            entropy_dict[subset_key] = {"entropy": entropy, "prob": occurrence / len(dataset)}
+        conditional_entropy = self.__calculate_conditional_entropy(entropy_dict)
+        gain = self.__calculate_gain(global_entropy[0], conditional_entropy)
+        # intrinsic_info = self.__calculate_intrinsic_info(entropy_dict)
+        # gain_ratio = self.__calculate_gain_ratio(gain, intrinsic_info)
+        return gain
 
     @staticmethod
     def __calculate_entropy(data_subset: list, key: string = "survived"):
@@ -101,13 +155,10 @@ class DataCalculation:
             divided_dataset[temp_key].append(element)
         return divided_dataset
 
-
     def get_probability(self, data_subset: list, key: string):
         temp_subset = []
         value_set = set()
         for data in data_subset:
             temp_subset.append(data[key])
             value_set.add(data[key])
-        return [temp_subset.count(value)/len(temp_subset) for value in value_set]
-
-
+        return [temp_subset.count(value) / len(temp_subset) for value in value_set]

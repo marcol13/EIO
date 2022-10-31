@@ -10,7 +10,7 @@ class DataReader:
         with open(self.path) as file:
             batch = csv.reader(file, "excel", delimiter=",")
             next(batch)
-            data = [{"class": int(row[1]), "sex": row[3], "age": self.__classify_age(int(row[4])), "sib": int(row[5]),
+            data = [{"class": int(row[1]), "sex": row[3], "age": int(row[4]), "sib": int(row[5]),
                      "parch": int(row[6]), "survived": "no" if int(row[7]) == 0 else "yes"} for row in batch]
         return data
 
