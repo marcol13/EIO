@@ -1,4 +1,7 @@
 from lib.DataReader import DataReader
+from lib.DataCalculation import DataCalculation
 
 data = DataReader("./assets/titanic-homework.csv")
-data.read_file()
+file = data.read_file()
+
+calc = DataCalculation(file)
