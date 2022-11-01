@@ -19,8 +19,8 @@ class DataCalculation:
         global_entropy = self.__calculate_entropy(dataset)
 
         if global_entropy[0] == 0.0:
-            parent_uuid = uuid.uuid4()
-            self.tree.create_node(dataset[0][output_key], parent_uuid, parent=parent_key)
+            node_uuid = uuid.uuid4()
+            self.tree.create_node(dataset[0][output_key], node_uuid, parent=parent_key)
             return
 
         gain_ratio_dict = {}
@@ -40,6 +40,12 @@ class DataCalculation:
             gain_ratio = self.__calculate_gain_ratio(gain, intrinsic_info)
             gain_ratio_dict[key] = gain_ratio
         if gain_ratio_dict == {}:
+            subset = self.__generate_subset(dataset, key)
+            for (key, value_list) in subset.items():
+                subset[key] = len(value_list)
+            result = max(subset, key=subset.get)
+            node_uuid = uuid.uuid4()
+            self.tree.create_node(result, node_uuid, parent=parent_key)
             return
 
         max_key, max_value = max(gain_ratio_dict.items(), key=lambda k: k[1])
@@ -54,19 +60,7 @@ class DataCalculation:
             self.generate_tree(data, parent_key=node_uuid)
 
     def __determine_threshold(self, key: string = 'age', output_key: string = 'survived'):
-        key_list = [tuple([data[key], 0 if data[output_key] == "no" else 1]) for data in self.dataset]
-        key_list = sorted(key_list, key=lambda x: x[0])
-        thresh_list = []
-        counter = 1
-        age_sum = key_list[0][1]
-        for i in range(1, len(key_list) + 1):
-            if key_list[i % len(key_list)][0] != key_list[i - 1][0]:
-                thresh_list.append({"age": key_list[i - 1][0], "prob": age_sum / counter})
-                counter = 1
-                age_sum = key_list[i % len(key_list)][1]
-            else:
-                counter += 1
-                age_sum += key_list[i % len(key_list)][1]
+        thresh_list = [{"age": data[key], "prob": data[output_key]} for data in self.dataset]
 
         max_gain_ratio = (0, 0)
         for i in range(0, len(thresh_list) - 1):
@@ -75,7 +69,6 @@ class DataCalculation:
                 temp = (thresh, self.__check_threshold_gain(thresh))
                 if max_gain_ratio[1] < temp[1]:
                     max_gain_ratio = temp
-
         self.__replace_values_by_thresh(max_gain_ratio[0])
 
     def __replace_values_by_thresh(self, threshold: float, key: string = "age"):
