@@ -1,0 +1,2 @@
+CarId,Pclass,Name,Sex,Age,SibSp,Parch,Survived
+1,3,"Braund, Mr. Owen Harris",male,22,1,0,0
